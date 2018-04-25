@@ -77,3 +77,10 @@ class Platform:
             return "SNAKE"
         elif red == True and orange == False:
             return "BALL"
+
+    def getBottomDimens(self):
+        return self.pt2
+    def getTopDimens(self):
+        return self.pt1
+            
+            

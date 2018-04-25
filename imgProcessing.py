@@ -26,7 +26,6 @@ def startGameScan():
 def clickNewGame(dimensions):
     img = ImageGrab.grab()
     width, height = img.size
-    #x = (dimensions[0] + dimensions[1]) / 2
     x = (int(width) / 2)
     y = dimensions[3]
     windowImg = ImageGrab.grab(bbox=(dimensions))

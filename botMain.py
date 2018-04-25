@@ -13,17 +13,21 @@ from imgProcessing import startGameScan
 from imgProcessing import clickNewGame
 
 
+levelColor = (0,0,0)
+dimensions = (0,0,0,0)
+
 def main():
     for i in list(range(3))[::-1]:
         print(i+1)
         time.sleep(1)
     print("Go!")
-
+    global dimensions
     dimensions = startGameScan()
     clickNewGame(dimensions)
     img = ImageGrab.grab(bbox=(dimensions))
     #Initial play area scan
     platforms = scanPlatforms(img)
+    updateLevel(platforms, img)
     while(True):
         img = ImageGrab.grab(bbox=(dimensions))
         screen = np.array(img)
@@ -37,19 +41,8 @@ def main():
         calcPlay(platforms, img)
         
 
-
 def calcPlay(platforms, imgScreen):
-    #Calc play
-    qBertPlat = 0
-    badPlat = []
-    for plat in platforms:
-        platStand = plat.scanPlatform(imgScreen)
-        if platStand == "QBERT":
-            qBertPlat = plat.platNumber
-        elif platStand == "BALL" or platStand == "SNAKE":
-            badPlat.append(plat.platNumber)
-
-    playable = getPlayable(qBertPlat)
+    playable, badPlat = findQBert(platforms, imgScreen)
     #Logic
     goodPlatNumber = []
     goodPlatDirect = []
@@ -81,18 +74,56 @@ def calcPlay(platforms, imgScreen):
         rndDirect = random.choice(goodPlatDirect)
         pyautogui.keyDown(rndDirect)
         pyautogui.keyUp(rndDirect)
-        return rndDirect
+        return
     except:
         return
 
+def findQBert(platforms, img):
+    imgScreen = img
+    qBertPlat = -1
+    badPlat = []
+    isNewLevel = False
+    while(qBertPlat == -1):
+        for plat in platforms:
+            platStand = plat.scanPlatform(imgScreen)
+            if platStand == "QBERT":
+                qBertPlat = plat.platNumber
+            elif platStand == "BALL" or platStand == "SNAKE":
+                badPlat.append(plat.platNumber)
+        #If qbert wasn't found check if it's a new level, if it is update
+        if qBertPlat == -1:
+            imgScreen = ImageGrab.grab(bbox=(dimensions))
+            if checkNewLevel(platforms, imgScreen) == True:
+                isNewLevel = True
 
+    if isNewLevel == True:
+        updateLevel(platforms, imgScreen)
 
-def checkNewLevel(platforms, screen):
-    print()
+    return getPlayable(qBertPlat), badPlat
     
+
+def checkNewLevel(platforms, img):
+    dimens = platforms[27].getBottomDimens()
+    width, height = img.size
+    imgCrop = img.crop((0, dimens[1], width, height))
+    colors = imgCrop.getcolors(256)
+    for c in colors:
+        if c[1][0] == 255 and c[1][1] == 0 and c[1][2] == 255:
+            return True
+    return False
+
+def updateLevel(platforms, img):
+    bottomDimens = platforms[12].getBottomDimens()
+    topDimens = platforms[12].getTopDimens()
+    y = bottomDimens[1]
+    x = (topDimens[0] + bottomDimens[0]) / 2
+    imgPx = img.load()
+    pxC = imgPx[int(x),int(y)]
+    global levelColor
+    levelColor = pxC
+
 def checkGameOver(screen):
-    #36,36,80
-    px = screen[415,195]
+    px = screen[5,5]
     if px[0] == 36 and px[1] == 36 and px[2] == 80:
         return True
     else:
