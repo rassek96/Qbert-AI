@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import ImageGrab
+#from PIL import ImageGrab
 from PIL import Image
 import cv2
 import time
@@ -11,6 +11,8 @@ from platformScan import scanPlatforms
 from platformScan import Platform
 from imgProcessing import startGameScan
 from imgProcessing import clickNewGame
+from imgProcessing import takeScreenshot
+import mss
 
 
 levelColor = (0,0,0)
@@ -24,18 +26,20 @@ def main():
     global dimensions
     dimensions = startGameScan()
     clickNewGame(dimensions)
-    img = ImageGrab.grab(bbox=(dimensions))
+    img = takeScreenshot(dimensions)
     #Initial play area scan
     platforms = scanPlatforms(img)
     updateLevel(platforms, img)
     while(True):
-        img = ImageGrab.grab(bbox=(dimensions))
+        img = takeScreenshot(dimensions)
         screen = np.array(img)
         
         #Check if game over
         if checkGameOver(screen) == True:
             print("Go!")
             clickNewGame(dimensions)
+            img = takeScreenshot(dimensions)
+            updateLevel(platforms, img)
             continue
         
         calcPlay(platforms, img)
@@ -67,11 +71,22 @@ def calcPlay(platforms, imgScreen):
             elif playable[0][i] in badPlat:
                 continue
             else:
-                goodPlatNumber.append(playable[0][i])
-                goodPlatDirect.append(playable[1][i])
-        
+                return
+                #goodPlatNumber.append(playable[0][i])
+                #goodPlatDirect.append(playable[1][i])
+
+    goodPlatColorDirect = []
+    i = 0
+    for gNum in goodPlatNumber:
+        if platforms[gNum].checkLevelColor(levelColor, imgScreen) == True:
+            goodPlatColorDirect.append(goodPlatDirect[i])
+        i += 1
     try:
-        rndDirect = random.choice(goodPlatDirect)
+        rndDirect = None
+        if len(goodPlatColorDirect) > 0:
+            rndDirect = random.choice(goodPlatColorDirect)
+        else:
+            rndDirect = random.choice(goodPlatDirect)
         pyautogui.keyDown(rndDirect)
         pyautogui.keyUp(rndDirect)
         return
@@ -92,7 +107,7 @@ def findQBert(platforms, img):
                 badPlat.append(plat.platNumber)
         #If qbert wasn't found check if it's a new level, if it is update
         if qBertPlat == -1:
-            imgScreen = ImageGrab.grab(bbox=(dimensions))
+            imgScreen = takeScreenshot(dimensions)
             if checkNewLevel(platforms, imgScreen) == True:
                 isNewLevel = True
 

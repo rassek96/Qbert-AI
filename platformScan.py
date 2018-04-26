@@ -78,6 +78,13 @@ class Platform:
         elif red == True and orange == False:
             return "BALL"
 
+    def checkLevelColor(self, color, img):
+        y = self.pt2[1]
+        x = (self.pt1[0] + self.pt2[0]) / 2
+        imgPx = img.load()
+        pxC = imgPx[int(x),int(y)]
+        return color == pxC
+        
     def getBottomDimens(self):
         return self.pt2
     def getTopDimens(self):
