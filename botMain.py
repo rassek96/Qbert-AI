@@ -1,11 +1,7 @@
 import numpy as np
-#from PIL import ImageGrab
 from PIL import Image
-import cv2
 import time
 import pyautogui
-from matplotlib import pyplot as plt
-import imutils
 import random
 from platformScan import scanPlatforms
 from platformScan import Platform
@@ -19,7 +15,7 @@ levelColor = (0,0,0)
 dimensions = (0,0,0,0)
 
 def main():
-    for i in list(range(3))[::-1]:
+    for i in list(range(2))[::-1]:
         print(i+1)
         time.sleep(1)
     print("Go!")
@@ -46,12 +42,13 @@ def main():
         
 
 def calcPlay(platforms, imgScreen):
-    playable, badPlat = findQBert(platforms, imgScreen)
+    playable, badPlat, ballPlat, qBertPlat = findQBert(platforms, imgScreen)
     #Logic
+    isCorner = False
     goodPlatNumber = []
     goodPlatDirect = []
     for i in range(0,len(playable[0])):
-        if playable[0][i] in badPlat:
+        if playable[0][i] in badPlat or playable[0][i] in ballPlat:
             continue
         else:
             playable2 = getPlayable(playable[0][i])
@@ -60,9 +57,14 @@ def calcPlay(platforms, imgScreen):
                 if(playable2[0][i2] in badPlat):
                     platIsGood = False
                     break
+                elif playable2[0][i2] in ballPlat:
+                    if playable2[0][i2] < playable[0][i]:
+                        platIsGood = False
             if platIsGood == True:
                 goodPlatNumber.append(playable[0][i])
                 goodPlatDirect.append(playable[1][i])
+            if len(playable[0]) == 1: 
+                isCorner = True
     if len(goodPlatDirect) == 0:
         for i in range(0,len(playable[0])):
             if len(playable[0]) == 1:
@@ -70,10 +72,6 @@ def calcPlay(platforms, imgScreen):
                 goodPlatDirect.append(playable[1][i])
             elif playable[0][i] in badPlat:
                 continue
-            else:
-                return
-                #goodPlatNumber.append(playable[0][i])
-                #goodPlatDirect.append(playable[1][i])
 
     goodPlatColorDirect = []
     i = 0
@@ -89,6 +87,10 @@ def calcPlay(platforms, imgScreen):
             rndDirect = random.choice(goodPlatDirect)
         pyautogui.keyDown(rndDirect)
         pyautogui.keyUp(rndDirect)
+        if isCorner == True:
+            time.sleep(0.2)
+            pyautogui.keyDown(rndDirect)
+            pyautogui.keyUp(rndDirect)
         return
     except:
         return
@@ -97,13 +99,16 @@ def findQBert(platforms, img):
     imgScreen = img
     qBertPlat = -1
     badPlat = []
+    ballPlat = []
     isNewLevel = False
     while(qBertPlat == -1):
         for plat in platforms:
             platStand = plat.scanPlatform(imgScreen)
             if platStand == "QBERT":
                 qBertPlat = plat.platNumber
-            elif platStand == "BALL" or platStand == "SNAKE":
+            elif platStand == "BALL":
+                ballPlat.append(plat.platNumber)
+            elif platStand == "SNAKE":
                 badPlat.append(plat.platNumber)
         #If qbert wasn't found check if it's a new level, if it is update
         if qBertPlat == -1:
@@ -114,7 +119,7 @@ def findQBert(platforms, img):
     if isNewLevel == True:
         updateLevel(platforms, imgScreen)
 
-    return getPlayable(qBertPlat), badPlat
+    return getPlayable(qBertPlat), badPlat, ballPlat, qBertPlat
     
 
 def checkNewLevel(platforms, img):
