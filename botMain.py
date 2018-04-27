@@ -3,12 +3,13 @@ from PIL import Image
 import time
 import pyautogui
 import random
+import mss
 from platformScan import scanPlatforms
 from platformScan import Platform
 from imgProcessing import startGameScan
 from imgProcessing import clickNewGame
 from imgProcessing import takeScreenshot
-import mss
+import deepLearn
 
 
 levelColor = (0,0,0)
@@ -26,19 +27,29 @@ def main():
     #Initial play area scan
     platforms = scanPlatforms(img)
     updateLevel(platforms, img)
+    gameOverCount = 0
+    oldImg = img
     while(True):
         img = takeScreenshot(dimensions)
         screen = np.array(img)
         
         #Check if game over
         if checkGameOver(screen) == True:
+            gameOverCount += 1
+            filename = "gameovers/" + str(gameOverCount) + ".png"
+            oldImg.save(filename, "PNG")
             print("Go!")
             clickNewGame(dimensions)
             img = takeScreenshot(dimensions)
             updateLevel(platforms, img)
             continue
         
-        calcPlay(platforms, img)
+        #Self-learning
+        direct = calcPlay(platforms, img)
+        output = deepLearn.outputKeys(direct)
+        deepLearn.saveToFile(img, output)
+        
+        oldImg = img
         
 
 def calcPlay(platforms, imgScreen):
@@ -91,7 +102,7 @@ def calcPlay(platforms, imgScreen):
             time.sleep(0.2)
             pyautogui.keyDown(rndDirect)
             pyautogui.keyUp(rndDirect)
-        return
+        return rndDirect
     except:
         return
 
