@@ -21,7 +21,7 @@ def main():
         time.sleep(1)
     print("Go!")
     #deepLearn.train()
-    deepLearn.start()
+    #deepLearn.start()
     global dimensions
     dimensions = startGameScan()
     clickNewGame(dimensions)
@@ -31,10 +31,18 @@ def main():
     updateLevel(platforms, img)
     gameOverCount = 0
     oldImg = img
+    oldDirect = "down"
+    oldQBertPlat = 0
     while(True):
         img = takeScreenshot(dimensions)
         screen = np.array(img)
-        
+
+        if checkEnemyCollision(platforms, img, oldQBertPlat) == False:
+            print("save", oldQBertPlat, oldDirect)
+            output = deepLearn.outputKeys(oldDirect)
+            oldScreen = np.array(oldImg)
+            deepLearn.saveToFile(oldScreen, output)
+            
         #Check if game over
         if checkGameOver(screen) == True:
             gameOverCount += 1
@@ -47,22 +55,23 @@ def main():
             continue
         
         #Self-learning
-        deepDirect = deepLearn.test(screen)
-        direct = calcPlay(platforms, img)
-        print("Calc", direct)
-        print()
-        output = deepLearn.outputKeys(direct)
-        deepLearn.saveToFile(screen, output)
+        #nnDirect = deepLearn.test(screen)
+        direct, qBertPlat = calcPlay(platforms, img, nnDirect)
+        oldQBertPlat = qBertPlat
+        #print("Calc", direct)
+        #print()
         
         oldImg = img
+        oldDirect = direct
         
 
-def calcPlay(platforms, imgScreen):
+def calcPlay(platforms, imgScreen, nnDirect):
     playable, badPlat, ballPlat, qBertPlat = findQBert(platforms, imgScreen)
     #Logic
     isCorner = False
     goodPlatNumber = []
     goodPlatDirect = []
+    # loops through all playable/possible moves and finds good platforms
     for i in range(0,len(playable[0])):
         if playable[0][i] in badPlat or playable[0][i] in ballPlat:
             continue
@@ -89,12 +98,21 @@ def calcPlay(platforms, imgScreen):
             elif playable[0][i] in badPlat:
                 continue
 
+    #if a direction matches neural network match use it
+    for gDir in goodPlatDirect:
+        if gDir == nnDirect:
+            pyautogui.keyDown(gDir)
+            pyautogui.keyUp(gDir)
+            return gDir, qBertPlat
+        
+    ## otherwise pick a random good direction
     goodPlatColorDirect = []
     i = 0
     for gNum in goodPlatNumber:
         if platforms[gNum].checkLevelColor(levelColor, imgScreen) == True:
             goodPlatColorDirect.append(goodPlatDirect[i])
         i += 1
+        
     try:
         rndDirect = None
         if len(goodPlatColorDirect) > 0:
@@ -107,9 +125,9 @@ def calcPlay(platforms, imgScreen):
             time.sleep(0.2)
             pyautogui.keyDown(rndDirect)
             pyautogui.keyUp(rndDirect)
-        return rndDirect
+        return rndDirect, qBertPlat
     except:
-        return
+        return None, qBertPlat
 
 def findQBert(platforms, img):
     imgScreen = img
@@ -165,6 +183,11 @@ def checkGameOver(screen):
     else:
         return False
     
+def checkEnemyCollision(platforms, img, qBertPlat):
+    if qBertPlat == -1:
+        return True
+    return platforms[qBertPlat].scanPlatformForCollision(img)
+
 
 def getPlayable(platNumber):
     if platNumber == 0:

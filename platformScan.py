@@ -78,6 +78,26 @@ class Platform:
         elif red == True and orange == False:
             return "BALL"
 
+    def scanPlatformForCollision(self, img):
+        imgCrop = img.crop((self.pt1[0], self.pt1[1], self.pt2[0], self.pt2[1]))
+        colors = imgCrop.getcolors(256)
+        orange = False
+        red = False
+        purple = False
+        for c in colors:
+            if c[1][0] == 239 and c[1][1] == 86 and c[1][2] == 0:
+                orange = True
+            elif c[1][0] == 179 and c[1][1] == 0 and c[1][2] == 179:
+                purple = True
+            elif c[1][0] == 230 and c[1][1] == 0 and c[1][2] == 230:
+                purple = True
+            elif c[1][0] == 239 and c[1][1] == 16 and c[1][2] == 33:
+                red = True
+        if (orange == True and red == True) or (orange == True and purple == True):
+            return True
+        else:
+            return False
+        
     def checkLevelColor(self, color, img):
         y = self.pt2[1]
         x = (self.pt1[0] + self.pt2[0]) / 2

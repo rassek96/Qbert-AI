@@ -6,6 +6,7 @@ import os
 
 fileName = "training_data.npy"
 
+
 trainingData = []
 if os.path.isfile(fileName):
     trainingData = list(np.load(fileName))
@@ -34,7 +35,7 @@ def saveToFile(screen, output):
     screen = cv2.resize(screen, (80,60))
     global trainingData
     trainingData.append([screen,output])
-    if len(trainingData) % 500 == 0:
+    if len(trainingData) % 100 == 0:
         print("Saving to file!")
         print(len(trainingData))
         np.save(fileName, trainingData)
