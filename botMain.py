@@ -20,6 +20,8 @@ def main():
         print(i+1)
         time.sleep(1)
     print("Go!")
+    #deepLearn.train()
+    deepLearn.start()
     global dimensions
     dimensions = startGameScan()
     clickNewGame(dimensions)
@@ -45,9 +47,12 @@ def main():
             continue
         
         #Self-learning
+        deepDirect = deepLearn.test(screen)
         direct = calcPlay(platforms, img)
+        print("Calc", direct)
+        print()
         output = deepLearn.outputKeys(direct)
-        deepLearn.saveToFile(img, output)
+        deepLearn.saveToFile(screen, output)
         
         oldImg = img
         
