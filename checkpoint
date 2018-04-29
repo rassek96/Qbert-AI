@@ -1,2 +1,2 @@
-model_checkpoint_path: "C:\\Users\\Rasmus\\Desktop\\Linn\303\251universitetet - Webbprogrammerare\\2DV50E\\Project\\Qbert-AI\\model_alexnet-236"
-all_model_checkpoint_paths: "C:\\Users\\Rasmus\\Desktop\\Linn\303\251universitetet - Webbprogrammerare\\2DV50E\\Project\\Qbert-AI\\model_alexnet-236"
+model_checkpoint_path: "C:\\Users\\Rasmus\\Desktop\\Linn\303\251universitetet - Webbprogrammerare\\2DV50E\\Project\\Qbert-AI\\qbert-bot-0.001-modelnet-epochs.model"
+all_model_checkpoint_paths: "C:\\Users\\Rasmus\\Desktop\\Linn\303\251universitetet - Webbprogrammerare\\2DV50E\\Project\\Qbert-AI\\qbert-bot-0.001-modelnet-epochs.model"

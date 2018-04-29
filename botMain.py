@@ -20,8 +20,7 @@ def main():
         print(i+1)
         time.sleep(1)
     print("Go!")
-    #deepLearn.train()
-    #deepLearn.start()
+    deepLearn.train()
     global dimensions
     dimensions = startGameScan()
     clickNewGame(dimensions)
@@ -38,7 +37,7 @@ def main():
         screen = np.array(img)
 
         if checkEnemyCollision(platforms, img, oldQBertPlat) == False:
-            print("save", oldQBertPlat, oldDirect)
+            #print("save", oldQBertPlat, oldDirect)
             output = deepLearn.outputKeys(oldDirect)
             oldScreen = np.array(oldImg)
             deepLearn.saveToFile(oldScreen, output)
@@ -55,7 +54,7 @@ def main():
             continue
         
         #Self-learning
-        #nnDirect = deepLearn.test(screen)
+        nnDirect = deepLearn.test(screen)
         direct, qBertPlat = calcPlay(platforms, img, nnDirect)
         oldQBertPlat = qBertPlat
         #print("Calc", direct)
@@ -97,15 +96,7 @@ def calcPlay(platforms, imgScreen, nnDirect):
                 goodPlatDirect.append(playable[1][i])
             elif playable[0][i] in badPlat:
                 continue
-
-    #if a direction matches neural network match use it
-    for gDir in goodPlatDirect:
-        if gDir == nnDirect:
-            pyautogui.keyDown(gDir)
-            pyautogui.keyUp(gDir)
-            return gDir, qBertPlat
-        
-    ## otherwise pick a random good direction
+     
     goodPlatColorDirect = []
     i = 0
     for gNum in goodPlatNumber:
@@ -113,6 +104,18 @@ def calcPlay(platforms, imgScreen, nnDirect):
             goodPlatColorDirect.append(goodPlatDirect[i])
         i += 1
         
+    #if a direction matches neural network match use it
+    for gDir in goodPlatColorDirect:
+        if gDir == nnDirect:
+            pyautogui.keyDown(gDir)
+            pyautogui.keyUp(gDir)
+            return gDir, qBertPlat
+    for gDir in goodPlatDirect:
+        if gDir == nnDirect:
+            pyautogui.keyDown(gDir)
+            pyautogui.keyUp(gDir)
+            return gDir, qBertPlat
+    ## otherwise pick a random good direction
     try:
         rndDirect = None
         if len(goodPlatColorDirect) > 0:

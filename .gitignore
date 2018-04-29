@@ -1,4 +1,9 @@
 /gameovers
 /__pycache__
+/log
 training_data.npy
+training_data_v2.npy
+qbert-bot-0.001-modelnet-epochs.model.data-00000-of-00001
+qbert-bot-0.001-modelnet-epochs.model.index
+qbert-bot-0.001-modelnet-epochs.model.meta
 checkpoint
