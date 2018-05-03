@@ -20,7 +20,8 @@ def main():
         print(i+1)
         time.sleep(1)
     print("Go!")
-    deepLearn.train()
+    #deepLearn.train()
+    deepLearn.loadModel()
     global dimensions
     dimensions = startGameScan()
     clickNewGame(dimensions)
@@ -32,21 +33,26 @@ def main():
     oldImg = img
     oldDirect = "down"
     oldQBertPlat = 0
+    start = time.time()
+    count = 0
     while(True):
+        count += 1
+        end = time.time()
+        print("Loop took: ", end - start)
         img = takeScreenshot(dimensions)
         screen = np.array(img)
-
-        if checkEnemyCollision(platforms, img, oldQBertPlat) == False:
+        #if checkEnemyCollision(platforms, img, oldQBertPlat) == False:
             #print("save", oldQBertPlat, oldDirect)
-            output = deepLearn.outputKeys(oldDirect)
-            oldScreen = np.array(oldImg)
-            deepLearn.saveToFile(oldScreen, output)
-            
+            #output = deepLearn.outputKeys(oldDirect)
+            #oldScreen = np.array(oldImg)
+            #isSaved = deepLearn.saveToFile(oldScreen, output)
+        
         #Check if game over
         if checkGameOver(screen) == True:
             gameOverCount += 1
             filename = "gameovers/" + str(gameOverCount) + ".png"
             oldImg.save(filename, "PNG")
+            #deepLearn.train()
             print("Go!")
             clickNewGame(dimensions)
             img = takeScreenshot(dimensions)
@@ -54,14 +60,19 @@ def main():
             continue
         
         #Self-learning
-        nnDirect = deepLearn.test(screen)
+        nnDirect = None
+        if count % 2 == 0:
+            nnDirect = deepLearn.test(screen)
+            print(nnDirect)
         direct, qBertPlat = calcPlay(platforms, img, nnDirect)
-        oldQBertPlat = qBertPlat
-        #print("Calc", direct)
-        #print()
+        #oldQBertPlat = qBertPlat
+
+        #direct = deepLearn.keyCheck()
+        #output = deepLearn.outputKeys(direct)
+        #deepLearn.saveToFile(screen, output)
         
         oldImg = img
-        oldDirect = direct
+        #oldDirect = direct
         
 
 def calcPlay(platforms, imgScreen, nnDirect):
@@ -103,31 +114,29 @@ def calcPlay(platforms, imgScreen, nnDirect):
         if platforms[gNum].checkLevelColor(levelColor, imgScreen) == True:
             goodPlatColorDirect.append(goodPlatDirect[i])
         i += 1
+
         
     #if a direction matches neural network match use it
-    for gDir in goodPlatColorDirect:
-        if gDir == nnDirect:
-            pyautogui.keyDown(gDir)
-            pyautogui.keyUp(gDir)
-            return gDir, qBertPlat
-    for gDir in goodPlatDirect:
-        if gDir == nnDirect:
-            pyautogui.keyDown(gDir)
-            pyautogui.keyUp(gDir)
-            return gDir, qBertPlat
     ## otherwise pick a random good direction
     try:
         rndDirect = None
         if len(goodPlatColorDirect) > 0:
             rndDirect = random.choice(goodPlatColorDirect)
+            for gDir in goodPlatColorDirect:
+                if gDir == nnDirect:
+                    rndDirect = gDir
         else:
             rndDirect = random.choice(goodPlatDirect)
+            for gDir in goodPlatDirect:
+                if gDir == nnDirect:
+                    rndDirect = gDir
         pyautogui.keyDown(rndDirect)
         pyautogui.keyUp(rndDirect)
-        if isCorner == True:
-            time.sleep(0.2)
-            pyautogui.keyDown(rndDirect)
-            pyautogui.keyUp(rndDirect)
+        
+        #if isCorner == True:
+        #    time.sleep(0.2)
+        #    pyautogui.keyDown(rndDirect)
+        #    pyautogui.keyUp(rndDirect)
         return rndDirect, qBertPlat
     except:
         return None, qBertPlat
@@ -192,7 +201,7 @@ def checkEnemyCollision(platforms, img, qBertPlat):
     return platforms[qBertPlat].scanPlatformForCollision(img)
 
 
-def getPlayable(platNumber):
+def getPlayable(platNumber, platforms):
     if platNumber == 0:
         return [[1,2], ["down","right"]]
     elif platNumber == 1:
@@ -233,7 +242,7 @@ def getPlayable(platNumber):
         return [[24,25,12,13], ["down","right","left","up"]]
     elif platNumber == 19:
         return [[25,26,13,14], ["down","right","left","up"]]
-    elif platNumber == 20:
+    elif platNumber == 20:  
         return [[26,27,14], ["down","right","left"]]
     elif platNumber == 21:
         return [[15], ["up"]]
