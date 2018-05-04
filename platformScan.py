@@ -93,7 +93,7 @@ class Platform:
                 purple = True
             elif c[1][0] == 239 and c[1][1] == 16 and c[1][2] == 33:
                 red = True
-        if (orange == True and red == True) or (orange == True and purple == True):
+        if (orange == True and purple == True):
             return True
         else:
             return False

@@ -106,7 +106,8 @@ def getModel(width, height, lr):
 width = 160
 height = 120
 lr = 1e-3
-epochs = 10
+epochs = 6
+hmData = 6
 modelName = "qbert-bot-{}-{}-epochs.model".format(lr, "modelnet")
 
 def saveToFile(img, output):
@@ -116,7 +117,7 @@ def saveToFile(img, output):
     screen = convImage(img)
     global trainingData
     trainingData.append([screen,output])
-    if len(trainingData) % 1000 == 0:
+    if len(trainingData) % 200 == 0:
         print("Saving to file!")
         print(len(trainingData))
         np.save(fileName, trainingData)
@@ -124,7 +125,51 @@ def saveToFile(img, output):
     else:
         return False
 
+autoTrainingData = []
+lastSize = 0
+if os.path.isfile("autoTrainingData.npy"):
+    autoTrainingData = list(np.load("autoTrainingData.npy"))
+    lastSize = len(autoTrainingData)
+def autoCollect(img, output):
+    if output == [0,0,0,0]:
+        return False
+    screen = convImage(img)
+    global autoTrainingData
+    autoTrainingData.append([screen,output])
 
+def autoSaveToFile(shouldSave):
+    global autoTrainingData
+    global lastSize
+    
+    if shouldSave == True and (len(autoTrainingData) - lastSize) < 120:
+        print("Saving to file!")
+        print(len(autoTrainingData))
+        np.save("autoTrainingData.npy", autoTrainingData)
+    else:
+        autoTrainingData = []
+        if os.path.isfile("autoTrainingData.npy"):
+            autoTrainingData = list(np.load("autoTrainingData.npy"))
+
+autoTrainingBadData = []
+if os.path.isfile("autoTrainingBadData.npy"):
+    autoTrainingBadData = list(np.load("autoTrainingBadData.npy"))
+def autoBadCollect(img, output):
+    if output == [0,0,0,0]:
+        return False
+    screen = convImage(img)
+    global autoTrainingBadData
+    autoTrainingBadData.append([screen,output])
+def autoSaveToBadFile(shouldSave):
+    global autoTrainingBadData
+    # and (len(autoTrainingData) - lastSize) < 120
+    if shouldSave == True:
+        print("Saving to bad file!")
+        print(len(autoTrainingBadData))
+        np.save("autoTrainingBadData.npy", autoTrainingBadData)
+    else:
+        autoTrainingBadData = []
+        if os.path.isfile("autoTrainingBadData.npy"):
+            autoTrainingBadData = list(np.load("autoTrainingBadData.npy"))
 def convImage(img):
     screen = img
     screen[np.where((screen == [239, 86, 0]).all(axis = 2))] = [69, 244, 66]
@@ -135,13 +180,12 @@ def convImage(img):
 def train():
     #balanceData()
     model = getModel(width, height, lr)
-    hmData = 22
     for e in range(epochs):
         for i in range(1, hmData+1):
             tf.reset_default_graph()
-            trainData = np.load(fileName)
-            train = trainData[:-100]
-            test = trainData[-100:]
+            trainData = np.load("autoTrainingBadData.npy")
+            train = trainData[:-20]
+            test = trainData[-20:]
             x = np.array([i[0] for i in train]).reshape(-1,width,height,1)
             y = [i[1] for i in train]
             test_x = np.array([i[0] for i in test]).reshape(-1,width,height,1)
@@ -156,12 +200,14 @@ def loadModel():
     model.load(modelName)
 
 def test(img):
+    if not os.path.isfile("autoTrainingBadData.npy"):
+        return
     screen = convImage(img)
     tf.reset_default_graph()
     modelOut = model.predict([screen.reshape(width, height, 1)])[0]
     #print(modelOut)
     modelList = modelOut.tolist()
-    i = modelList.index(max(modelList))
+    i = modelList.index(min(modelList))
     if i == 0:
         return "left"
     elif i == 1:

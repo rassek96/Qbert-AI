@@ -14,13 +14,13 @@ import deepLearn
 
 levelColor = (0,0,0)
 dimensions = (0,0,0,0)
-
+shouldSave = False
 def main():
     for i in list(range(2))[::-1]:
         print(i+1)
         time.sleep(1)
     print("Go!")
-    #deepLearn.train()
+    deepLearn.train()
     deepLearn.loadModel()
     global dimensions
     dimensions = startGameScan()
@@ -30,49 +30,59 @@ def main():
     platforms = scanPlatforms(img)
     updateLevel(platforms, img)
     gameOverCount = 0
-    oldImg = img
-    oldDirect = "down"
     oldQBertPlat = 0
-    start = time.time()
-    count = 0
+    oldImg = img
+    count = 1
+    shouldTrain = False
+    gameover = False
     while(True):
-        count += 1
-        end = time.time()
-        print("Loop took: ", end - start)
         img = takeScreenshot(dimensions)
         screen = np.array(img)
-        #if checkEnemyCollision(platforms, img, oldQBertPlat) == False:
-            #print("save", oldQBertPlat, oldDirect)
-            #output = deepLearn.outputKeys(oldDirect)
-            #oldScreen = np.array(oldImg)
-            #isSaved = deepLearn.saveToFile(oldScreen, output)
-        
         #Check if game over
         if checkGameOver(screen) == True:
             gameOverCount += 1
             filename = "gameovers/" + str(gameOverCount) + ".png"
-            oldImg.save(filename, "PNG")
-            #deepLearn.train()
+            #oldImg.save(filename, "PNG")
+            if shouldTrain == True:
+                shouldTrain = False
+                deepLearn.train()
+                deepLearn.loadModel()
             print("Go!")
             clickNewGame(dimensions)
             img = takeScreenshot(dimensions)
             updateLevel(platforms, img)
+            gameover = True
             continue
-        
+
         #Self-learning
-        nnDirect = None
+        count += 1
+        nnDirect = "hEEAHHH"
         if count % 2 == 0:
             nnDirect = deepLearn.test(screen)
-            print(nnDirect)
         direct, qBertPlat = calcPlay(platforms, img, nnDirect)
+        
+        global shouldSave
+        if shouldSave == True:   
+            deepLearn.autoSaveToFile(shouldSave)
+            shouldSave = False
+            gameover = False
+            deepLearn.autoSaveToBadFile(False)
+        elif shouldSave != True and gameover == True:   
+            deepLearn.autoSaveToBadFile(True)
+            deepLearn.autoSaveToFile(False)
+            shouldTrain = True
+            shouldSave = False
+            gameover = False
+                
+        output = deepLearn.outputKeys(direct)
+        deepLearn.autoCollect(screen, output)
+        deepLearn.autoBadCollect(screen, output)
         #oldQBertPlat = qBertPlat
 
         #direct = deepLearn.keyCheck()
         #output = deepLearn.outputKeys(direct)
         #deepLearn.saveToFile(screen, output)
-        
         oldImg = img
-        #oldDirect = direct
         
 
 def calcPlay(platforms, imgScreen, nnDirect):
@@ -115,7 +125,6 @@ def calcPlay(platforms, imgScreen, nnDirect):
             goodPlatColorDirect.append(goodPlatDirect[i])
         i += 1
 
-        
     #if a direction matches neural network match use it
     ## otherwise pick a random good direction
     try:
@@ -132,11 +141,23 @@ def calcPlay(platforms, imgScreen, nnDirect):
                     rndDirect = gDir
         pyautogui.keyDown(rndDirect)
         pyautogui.keyUp(rndDirect)
-        
-        #if isCorner == True:
-        #    time.sleep(0.2)
-        #    pyautogui.keyDown(rndDirect)
-        #    pyautogui.keyUp(rndDirect)
+        if qBertPlat == 27:
+            time.sleep(0.2)
+            if platforms[26].checkLevelColor(levelColor, imgScreen) == True:
+                pyautogui.keyDown("down")
+                pyautogui.keyUp("down")
+            else:
+                pyautogui.keyDown(rndDirect)
+                pyautogui.keyUp(rndDirect)
+        elif qBertPlat == 21:
+            time.sleep(0.2)
+            if platforms[22].checkLevelColor(levelColor, imgScreen) == True:
+                pyautogui.keyDown("right")
+                pyautogui.keyUp("right")
+            else:
+                pyautogui.keyDown(rndDirect)
+                pyautogui.keyUp(rndDirect)
+        #print(rndDirect, nnDirect)
         return rndDirect, qBertPlat
     except:
         return None, qBertPlat
@@ -163,6 +184,9 @@ def findQBert(platforms, img):
                 isNewLevel = True
 
     if isNewLevel == True:
+        global shouldSave
+        shouldSave = True
+        print("NEW LEVEL")
         updateLevel(platforms, imgScreen)
 
     return getPlayable(qBertPlat), badPlat, ballPlat, qBertPlat
@@ -200,8 +224,16 @@ def checkEnemyCollision(platforms, img, qBertPlat):
         return True
     return platforms[qBertPlat].scanPlatformForCollision(img)
 
+def checkIfSave(platforms, img):
+    shouldSave = True
+    newPlats = []
+    for i, p in platforms:
+        if p.checkLevelColor(levelColor, img) == True:
+            newPlats.append(p)
+    if len(newPlats) == 27:
+        return shouldSave
 
-def getPlayable(platNumber, platforms):
+def getPlayable(platNumber):
     if platNumber == 0:
         return [[1,2], ["down","right"]]
     elif platNumber == 1:
